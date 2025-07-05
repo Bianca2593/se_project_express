@@ -6,19 +6,17 @@ const { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require('../utils/errors');
 module.exports.createUser = (req, res) => {
   const { name, avatar } = req.body;
 
-  console.log('📦 Body primit:', req.body); // Debug body
+  console.log('📦 Body primit:', req.body);
 
   return User.create({ name, avatar })
-    .then((user) => {
-      return res.status(201).json({
+    .then((user) => res.status(201).json({
         _id: user._id,
         name: user.name,
         avatar: user.avatar,
-      });
-    })
+      }))
     .catch((err) => {
       console.error('❌ Eroare la createUser:', err.name, err.message);
-      console.error(err); // Log complet
+      console.error(err);
 
       if (err.name === 'ValidationError') {
         return res.status(BAD_REQUEST).json({ message: 'Invalid user data' });
@@ -28,8 +26,7 @@ module.exports.createUser = (req, res) => {
 };
 
 // Obține toți userii
-module.exports.getUsers = (req, res) => {
-  return User.find({})
+module.exports.getUsers = (req, res) => User.find({})
     .then((users) => {
       const formattedUsers = users.map((user) => ({
         _id: user._id,
@@ -42,7 +39,6 @@ module.exports.getUsers = (req, res) => {
       console.error('❌ Eroare la getUsers:', err);
       return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
     });
-};
 
 // Obține un user după ID
 module.exports.getUser = (req, res) => {
@@ -54,13 +50,11 @@ module.exports.getUser = (req, res) => {
 
   return User.findById(userId)
     .orFail(() => new Error('NotFound'))
-    .then((user) => {
-      return res.status(200).json({
+    .then((user) => res.status(200).json({
         _id: user._id,
         name: user.name,
         avatar: user.avatar,
-      });
-    })
+      }))
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });
