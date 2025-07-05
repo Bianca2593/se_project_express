@@ -1,26 +1,31 @@
-
 const mongoose = require('mongoose');
 const ClothingItem = require('../models/clothingItem');
 const { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require('../utils/errors');
 
 // GET /items
 module.exports.getItems = (req, res) => {
-  ClothingItem.find({})
-    .then((items) => res.status(200).json(items))
-    .catch(() => res.status(SERVER_ERROR).json({ message: 'Internal server error' }));
+  return ClothingItem.find({})
+    .then((items) => {
+      return res.status(200).json(items);
+    })
+    .catch(() => {
+      return res.status(SERVER_ERROR).json({ message: 'Internal server error' });
+    });
 };
 
 // POST /items
 module.exports.createItem = (req, res) => {
   const { name, weather, imageUrl } = req.body;
 
-  ClothingItem.create({
+  return ClothingItem.create({
     name,
     weather,
     imageUrl,
     owner: req.user._id,
   })
-    .then((item) => res.status(201).json(item))
+    .then((item) => {
+      return res.status(201).json(item);
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         return res.status(BAD_REQUEST).json({ message: 'Invalid item data' });
@@ -37,9 +42,11 @@ module.exports.deleteItem = (req, res) => {
     return res.status(BAD_REQUEST).json({ message: 'Invalid item ID' });
   }
 
-  ClothingItem.findByIdAndDelete(itemId)
+  return ClothingItem.findByIdAndDelete(itemId)
     .orFail(() => new Error('NotFound'))
-    .then((item) => res.status(200).json(item))
+    .then((item) => {
+      return res.status(200).json(item);
+    })
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });
@@ -56,13 +63,15 @@ module.exports.likeItem = (req, res) => {
     return res.status(BAD_REQUEST).json({ message: 'Invalid item ID' });
   }
 
-  ClothingItem.findByIdAndUpdate(
+  return ClothingItem.findByIdAndUpdate(
     itemId,
     { $addToSet: { likes: req.user._id } },
     { new: true }
   )
     .orFail(() => new Error('NotFound'))
-    .then((item) => res.status(200).json(item))
+    .then((item) => {
+      return res.status(200).json(item);
+    })
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });
@@ -79,13 +88,15 @@ module.exports.unlikeItem = (req, res) => {
     return res.status(BAD_REQUEST).json({ message: 'Invalid item ID' });
   }
 
-  ClothingItem.findByIdAndUpdate(
+  return ClothingItem.findByIdAndUpdate(
     itemId,
     { $pull: { likes: req.user._id } },
     { new: true }
   )
     .orFail(() => new Error('NotFound'))
-    .then((item) => res.status(200).json(item))
+    .then((item) => {
+      return res.status(200).json(item);
+    })
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });

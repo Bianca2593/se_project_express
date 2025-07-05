@@ -8,9 +8,9 @@ module.exports.createUser = (req, res) => {
 
   console.log('📦 Body primit:', req.body); // Debug body
 
-  User.create({ name, avatar })
+  return User.create({ name, avatar })
     .then((user) => {
-      res.status(201).json({
+      return res.status(201).json({
         _id: user._id,
         name: user.name,
         avatar: user.avatar,
@@ -29,18 +29,18 @@ module.exports.createUser = (req, res) => {
 
 // Obține toți userii
 module.exports.getUsers = (req, res) => {
-  User.find({})
+  return User.find({})
     .then((users) => {
       const formattedUsers = users.map((user) => ({
         _id: user._id,
         name: user.name,
         avatar: user.avatar,
       }));
-      res.status(200).json(formattedUsers);
+      return res.status(200).json(formattedUsers);
     })
     .catch((err) => {
       console.error('❌ Eroare la getUsers:', err);
-      res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
+      return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
     });
 };
 
@@ -52,10 +52,10 @@ module.exports.getUser = (req, res) => {
     return res.status(BAD_REQUEST).json({ message: 'Invalid user ID' });
   }
 
-  User.findById(userId)
+  return User.findById(userId)
     .orFail(() => new Error('NotFound'))
     .then((user) => {
-      res.status(200).json({
+      return res.status(200).json({
         _id: user._id,
         name: user.name,
         avatar: user.avatar,
