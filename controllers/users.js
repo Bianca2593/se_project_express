@@ -21,14 +21,12 @@ module.exports.createUser = (req, res) => {
   }
 
   return bcrypt.hash(password, 10)
-    .then((hash) => {
-      return User.create({
+    .then((hash) => User.create({
         name,
         avatar,
         email,
         password: hash,
-      });
-    })
+      }))
     .then((user) => {
       const userWithoutPassword = user.toObject();
       delete userWithoutPassword.password;
@@ -78,14 +76,12 @@ module.exports.getCurrentUser = (req, res) => {
 
   return User.findById(userId)
     .orFail(() => new Error('NotFound'))
-    .then((user) => {
-      return res.status(200).json({
+    .then((user) => res.status(200).json({
         _id: user._id,
         name: user.name,
         avatar: user.avatar,
         email: user.email,
-      });
-    })
+      }))
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });
@@ -106,14 +102,12 @@ module.exports.updateUser = (req, res) => {
     { new: true, runValidators: true },
   )
     .orFail(() => new Error('NotFound'))
-    .then((updatedUser) => {
-      return res.status(200).json({
+    .then((updatedUser) => res.status(200).json({
         _id: updatedUser._id,
         name: updatedUser.name,
         avatar: updatedUser.avatar,
         email: updatedUser.email,
-      });
-    })
+      }))
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });
