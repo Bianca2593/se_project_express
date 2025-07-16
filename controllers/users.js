@@ -1,65 +1,125 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require('../utils/errors');
+const { JWT_SECRET } = require('../utils/config');
+const {
+  BAD_REQUEST,
+  UNAUTHORIZED,
+  NOT_FOUND,
+  SERVER_ERROR,
+  CONFLICT,
+} = require('../utils/errors');
 
-// Creează un user nou
+// Creează un user nou (signup)
 module.exports.createUser = (req, res) => {
-  const { name, avatar } = req.body;
+  const { name, avatar, email, password } = req.body;
 
   console.log('📦 Body primit:', req.body);
 
-  return User.create({ name, avatar })
-    .then((user) => res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        avatar: user.avatar,
-      }))
+  // ✅ Validare câmpuri lipsă
+  if (!email || !password) {
+    return res.status(BAD_REQUEST).json({ message: 'Email and password are required' });
+  }
+
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name,
+      avatar,
+      email,
+      password: hash,
+    }))
+    .then((user) => {
+      const userWithoutPassword = user.toObject();
+      delete userWithoutPassword.password;
+      res.status(201).json(userWithoutPassword);
+    })
     .catch((err) => {
       console.error('❌ Eroare la createUser:', err.name, err.message);
-      console.error(err);
+
+      if (err.code === 11000) {
+        return res.status(CONFLICT).json({ message: 'Email already exists' });
+      }
 
       if (err.name === 'ValidationError') {
-        return res.status(BAD_REQUEST).json({ message: 'Invalid user data' });
+        return res.status(BAD_REQUEST).json({ message: 'Invalid user data', details: err.message });
       }
+
       return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
     });
 };
 
-// Obține toți userii
-module.exports.getUsers = (req, res) => User.find({})
-    .then((users) => {
-      const formattedUsers = users.map((user) => ({
-        _id: user._id,
-        name: user.name,
-        avatar: user.avatar,
-      }));
-      return res.status(200).json(formattedUsers);
+// Autentificare user (signin)
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
+
+  // ✅ Validare câmpuri lipsă
+  if (!email || !password) {
+    return res.status(BAD_REQUEST).json({ message: 'Email and password are required' });
+  }
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        JWT_SECRET,
+        { expiresIn: '7d' },
+      );
+      res.send({ token });
     })
     .catch((err) => {
-      console.error('❌ Eroare la getUsers:', err);
-      return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
+      console.error('❌ Eroare la login:', err.message);
+      res.status(UNAUTHORIZED).json({ message: 'Incorrect email or password' });
     });
+};
 
-// Obține un user după ID
-module.exports.getUser = (req, res) => {
-  const { userId } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(BAD_REQUEST).json({ message: 'Invalid user ID' });
-  }
+// Obține userul curent (autentificat)
+module.exports.getCurrentUser = (req, res) => {
+  const userId = req.user._id;
 
   return User.findById(userId)
     .orFail(() => new Error('NotFound'))
     .then((user) => res.status(200).json({
-        _id: user._id,
-        name: user.name,
-        avatar: user.avatar,
-      }))
+      _id: user._id,
+      name: user.name,
+      avatar: user.avatar,
+      email: user.email, // ✅ Adăugat pentru testul Postman
+    }))
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });
       }
-      console.error('❌ Eroare la getUser:', err);
+      console.error('❌ Eroare la getCurrentUser:', err);
       return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
     });
 };
+
+// Actualizează datele userului curent
+module.exports.updateUser = (req, res) => {
+  const userId = req.user._id;
+  const { name, avatar } = req.body;
+
+  return User.findByIdAndUpdate(
+    userId,
+    { name, avatar },
+    { new: true, runValidators: true },
+  )
+    .orFail(() => new Error('NotFound'))
+    .then((updatedUser) => res.status(200).json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      avatar: updatedUser.avatar,
+      email: updatedUser.email, // ✅ Include și email pentru consistență
+    }))
+    .catch((err) => {
+      if (err.message === 'NotFound') {
+        return res.status(NOT_FOUND).json({ message: 'User not found' });
+      }
+      if (err.name === 'ValidationError') {
+        return res.status(BAD_REQUEST).json({ message: 'Invalid user data' });
+      }
+      console.error('❌ Eroare la updateUser:', err);
+      return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
+    });
+};
+

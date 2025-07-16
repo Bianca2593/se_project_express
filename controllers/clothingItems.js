@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 const ClothingItem = require('../models/clothingItem');
-const { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require('../utils/errors');
+const {
+  BAD_REQUEST,
+  NOT_FOUND,
+  SERVER_ERROR,
+  FORBIDDEN,
+} = require('../utils/errors');
 
 // GET /items
 module.exports.getItems = (req, res) =>
@@ -35,12 +40,21 @@ module.exports.deleteItem = (req, res) => {
     return res.status(BAD_REQUEST).json({ message: 'Invalid item ID' });
   }
 
-  return ClothingItem.findByIdAndDelete(itemId)
+  return ClothingItem.findById(itemId)
     .orFail(() => new Error('NotFound'))
-    .then((item) => res.status(200).json(item))
+    .then((item) => {
+      if (item.owner.toString() !== req.user._id) {
+        return res.status(FORBIDDEN).json({ message: 'Forbidden: Not your item' });
+      }
+
+      return item.deleteOne().then(() => res.status(200).json(item));
+    })
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });
+      }
+      if (err.name === 'CastError') {
+        return res.status(BAD_REQUEST).json({ message: 'Invalid item ID format' });
       }
       return res.status(SERVER_ERROR).json({ message: 'Internal server error' });
     });
@@ -65,6 +79,9 @@ module.exports.likeItem = (req, res) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });
       }
+      if (err.name === 'CastError') {
+        return res.status(BAD_REQUEST).json({ message: 'Invalid item ID format' });
+      }
       return res.status(SERVER_ERROR).json({ message: 'Internal server error' });
     });
 };
@@ -87,6 +104,9 @@ module.exports.unlikeItem = (req, res) => {
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });
+      }
+      if (err.name === 'CastError') {
+        return res.status(BAD_REQUEST).json({ message: 'Invalid item ID format' });
       }
       return res.status(SERVER_ERROR).json({ message: 'Internal server error' });
     });

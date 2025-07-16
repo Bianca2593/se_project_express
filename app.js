@@ -1,40 +1,58 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 
-// Importă rutele
+// Controllers pentru autentificare
+const { createUser, login } = require('./controllers/users');
+
+// Middleware pentru autentificare
+const auth = require('./middlewares/auth');
+
+// Rute
 const usersRouter = require('./routes/users');
 const clothingItemsRouter = require('./routes/clothingItems');
 
 // Coduri de eroare
-const { NOT_FOUND } = require('./utils/errors');
+const {
+  NOT_FOUND,
+  SERVER_ERROR,
+} = require('./utils/errors');
 
 const { PORT = 3001 } = process.env;
 const app = express();
 
-// Conectare MongoDB
+// 🔌 Conectare MongoDB
 mongoose.connect('mongodb://127.0.0.1:27017/wtwr_db')
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// Middleware pentru citirea corpului cererii
+// 🔧 Middleware-uri globale
 app.use(express.json());
+app.use(cors()); // activează CORS pentru frontend
 
-// Middleware temporar de autorizare
-app.use((req, res, next) => {
-  req.user = { _id: '6862e0abbd1b3357d766a321' }; // ← înlocuiește cu un user real existent
-  next();
-});
+// 🔓 Rute publice
+app.post('/signup', createUser);
+app.post('/signin', login);
 
-// Rute
-app.use('/users', usersRouter);
+// 🔐 Middleware pentru autentificare — de aici încolo `req.user` este disponibil
+app.use(auth);
+
+// 🔐 Rute protejate
 app.use('/items', clothingItemsRouter);
+app.use('/users', usersRouter);
 
-// 404 pentru resurse inexistente
+// ❌ Rute inexistente
 app.use((req, res) => {
-  res.status(NOT_FOUND).send({ message: 'Requested resource not found' });
+  res.status(NOT_FOUND).json({ message: 'Requested resource not found' });
 });
 
-// Pornire server
+// 💥 Global error handler pentru erori neprevăzute
+app.use((err, req, res, next) => {
+  console.error('🔥 Unhandled error:', err);
+  res.status(SERVER_ERROR).json({ message: 'Unhandled server error' });
+});
+
+// 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 Serverul rulează pe http://localhost:${PORT}`);
 });
