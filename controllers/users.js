@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
@@ -17,22 +16,23 @@ module.exports.createUser = (req, res) => {
 
   console.log('📦 Body primit:', req.body);
 
-  // ✅ Validare câmpuri lipsă
   if (!email || !password) {
     return res.status(BAD_REQUEST).json({ message: 'Email and password are required' });
   }
 
-  bcrypt.hash(password, 10)
-    .then((hash) => User.create({
-      name,
-      avatar,
-      email,
-      password: hash,
-    }))
+  return bcrypt.hash(password, 10)
+    .then((hash) => {
+      return User.create({
+        name,
+        avatar,
+        email,
+        password: hash,
+      });
+    })
     .then((user) => {
       const userWithoutPassword = user.toObject();
       delete userWithoutPassword.password;
-      res.status(201).json(userWithoutPassword);
+      return res.status(201).json(userWithoutPassword);
     })
     .catch((err) => {
       console.error('❌ Eroare la createUser:', err.name, err.message);
@@ -53,7 +53,6 @@ module.exports.createUser = (req, res) => {
 module.exports.login = (req, res) => {
   const { email, password } = req.body;
 
-  // ✅ Validare câmpuri lipsă
   if (!email || !password) {
     return res.status(BAD_REQUEST).json({ message: 'Email and password are required' });
   }
@@ -65,11 +64,11 @@ module.exports.login = (req, res) => {
         JWT_SECRET,
         { expiresIn: '7d' },
       );
-      res.send({ token });
+      return res.send({ token });
     })
     .catch((err) => {
       console.error('❌ Eroare la login:', err.message);
-      res.status(UNAUTHORIZED).json({ message: 'Incorrect email or password' });
+      return res.status(UNAUTHORIZED).json({ message: 'Incorrect email or password' });
     });
 };
 
@@ -79,12 +78,14 @@ module.exports.getCurrentUser = (req, res) => {
 
   return User.findById(userId)
     .orFail(() => new Error('NotFound'))
-    .then((user) => res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      avatar: user.avatar,
-      email: user.email, // ✅ Adăugat pentru testul Postman
-    }))
+    .then((user) => {
+      return res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        avatar: user.avatar,
+        email: user.email,
+      });
+    })
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });
@@ -105,12 +106,14 @@ module.exports.updateUser = (req, res) => {
     { new: true, runValidators: true },
   )
     .orFail(() => new Error('NotFound'))
-    .then((updatedUser) => res.status(200).json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      avatar: updatedUser.avatar,
-      email: updatedUser.email, // ✅ Include și email pentru consistență
-    }))
+    .then((updatedUser) => {
+      return res.status(200).json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        avatar: updatedUser.avatar,
+        email: updatedUser.email,
+      });
+    })
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });
@@ -122,4 +125,3 @@ module.exports.updateUser = (req, res) => {
       return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
     });
 };
-

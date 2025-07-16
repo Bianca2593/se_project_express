@@ -38,16 +38,16 @@ app.post('/signin', login);
 app.use(auth);
 
 // 🔐 Rute protejate
-app.use('/items', clothingItemsRouter);
 app.use('/users', usersRouter);
+app.use('/items', clothingItemsRouter);
 
 // ❌ Rute inexistente
 app.use((req, res) => {
   res.status(NOT_FOUND).json({ message: 'Requested resource not found' });
 });
 
-// 💥 Global error handler pentru erori neprevăzute
-app.use((err, req, res, next) => {
+// 💥 Global error handler pentru erori neprevăzute (fără parametru `next`, care nu e folosit)
+app.use((err, req, res) => {
   console.error('🔥 Unhandled error:', err);
   res.status(SERVER_ERROR).json({ message: 'Unhandled server error' });
 });
