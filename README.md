@@ -1,17 +1,19 @@
 # 👗 WTWR (What to Wear?) – Back End
 
-This is the **back-end project** for the "What to Wear" web application, developed as part of Sprint 12 in the TripleTen Software Engineering Program.
+This is the **back-end project** for the "What to Wear" web application, developed as part of the **TripleTen Software Engineering Program**.
 
-The goal is to build a RESTful server using **Node.js**, **Express**, and **MongoDB**, with structured routing, data validation, and robust error handling. This project handles users and clothing items, and simulates basic authentication via middleware.
+This repo covers both **Sprint 12** and **Sprint 13**, with full support for **user authentication**, **token-based authorization**, and CRUD operations for users and clothing items.
 
 ---
 
 ## 🚀 Project Overview
 
-- 👤 Create & retrieve users  
+- 👤 Create, update & retrieve users  
 - 🧥 Create, get, delete clothing items  
 - ❤️ Like & unlike items  
-- ❌ Return proper status codes for errors (400, 404, 500)  
+- 🔐 JWT authentication (login + signup)  
+- 🔒 Protected routes (`/users/me`, `/items`)  
+- ❌ Return proper status codes for errors (400, 401, 403, 404, 409, 500)  
 - 🧪 Tested with Postman collection & GitHub Actions  
 
 ---
@@ -21,7 +23,10 @@ The goal is to build a RESTful server using **Node.js**, **Express**, and **Mong
 - Node.js  
 - Express.js  
 - MongoDB & Mongoose  
-- Postman (manual test suite)  
+- bcryptjs (password hashing)  
+- jsonwebtoken (JWT auth)  
+- dotenv  
+- Postman  
 - GitHub Actions (CI tests)  
 - ESLint  
 
@@ -40,14 +45,55 @@ se_project_express/
 ├── routes/
 │   ├── users.js
 │   └── clothingItems.js
+├── middlewares/
+│   └── auth.js
 ├── utils/
-│   └── errors.js
+│   ├── errors.js
+│   └── config.js
 ├── app.js
+├── .env
 ├── .eslintrc
 ├── .gitignore
 ├── package.json
 └── sprint.txt
 ```
+
+---
+
+## 🔐 Authentication
+
+- `POST /signup` – Create new user (with email + hashed password)  
+- `POST /signin` – Login and receive JWT  
+- All other routes are protected and require a valid token  
+
+Use the following header for protected requests:
+
+```
+Authorization: Bearer <your_token_here>
+```
+
+---
+
+## 📪 API Endpoints
+
+### Users
+
+| Method | Endpoint         | Description                     |
+|--------|------------------|---------------------------------|
+| POST   | `/signup`        | Create new user                 |
+| POST   | `/signin`        | Login and receive JWT           |
+| GET    | `/users/me`      | Get current user                |
+| PATCH  | `/users/me`      | Update current user (name/avatar) |
+
+### Clothing Items
+
+| Method | Endpoint               | Description                    |
+|--------|------------------------|--------------------------------|
+| GET    | `/items`               | Get all items                  |
+| POST   | `/items`               | Create new item                |
+| DELETE | `/items/:itemId`       | Delete item (if owner)         |
+| PUT    | `/items/:itemId/likes` | Like item                      |
+| DELETE | `/items/:itemId/likes` | Remove like from item          |
 
 ---
 
@@ -68,11 +114,20 @@ cd se_project_express
 npm install
 ```
 
-### 3. Start MongoDB
+### 3. Set up environment variables
 
-Make sure MongoDB is running locally on `mongodb://127.0.0.1:27017`.
+Create a `.env` file:
 
-### 4. Run the server
+```env
+JWT_SECRET=dev-secret
+PORT=3001
+```
+
+### 4. Start MongoDB
+
+Make sure MongoDB is running locally on `mongodb://127.0.0.1:27017/wtwr_db`.
+
+### 5. Run the server
 
 Start normally:
 
@@ -90,9 +145,10 @@ npm run dev
 
 ## 🧪 Testing with Postman
 
-- Use the official 88-test Postman collection provided by TripleTen.
-- Set `user_name = testItem` and `user_avatar = https://example.com/av.bmp` in your environment.
-- Ensure that all 88 tests pass before submitting.
+- Use the official Postman collection provided by TripleTen.  
+- Make sure to run `POST /signup` and `POST /signin` before accessing protected routes.  
+- Set `user_name = testItem` and `user_avatar = https://example.com/av.bmp` in your environment.  
+- All **88 tests** must pass before submitting.  
 
 ---
 
@@ -101,7 +157,8 @@ npm run dev
 - ✅ All Postman tests: 88/88 passed  
 - ✅ GitHub Actions: green  
 - ✅ Linter: clean  
-- ✅ Ready for final review  
+- ✅ JWT + auth logic implemented  
+- ✅ Ready for final review ✅  
 
 ---
 

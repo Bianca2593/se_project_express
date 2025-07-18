@@ -22,11 +22,11 @@ module.exports.createUser = (req, res) => {
 
   return bcrypt.hash(password, 10)
     .then((hash) => User.create({
-        name,
-        avatar,
-        email,
-        password: hash,
-      }))
+      name,
+      avatar,
+      email,
+      password: hash,
+    }))
     .then((user) => {
       const userWithoutPassword = user.toObject();
       delete userWithoutPassword.password;
@@ -66,7 +66,12 @@ module.exports.login = (req, res) => {
     })
     .catch((err) => {
       console.error('❌ Eroare la login:', err.message);
-      return res.status(UNAUTHORIZED).json({ message: 'Incorrect email or password' });
+
+      if (err.message === 'Unauthorized') {
+        return res.status(UNAUTHORIZED).json({ message: 'Incorrect email or password' });
+      }
+
+      return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
     });
 };
 
@@ -77,11 +82,11 @@ module.exports.getCurrentUser = (req, res) => {
   return User.findById(userId)
     .orFail(() => new Error('NotFound'))
     .then((user) => res.status(200).json({
-        _id: user._id,
-        name: user.name,
-        avatar: user.avatar,
-        email: user.email,
-      }))
+      _id: user._id,
+      name: user.name,
+      avatar: user.avatar,
+      email: user.email,
+    }))
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });
@@ -103,11 +108,11 @@ module.exports.updateUser = (req, res) => {
   )
     .orFail(() => new Error('NotFound'))
     .then((updatedUser) => res.status(200).json({
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        avatar: updatedUser.avatar,
-        email: updatedUser.email,
-      }))
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      avatar: updatedUser.avatar,
+      email: updatedUser.email,
+    }))
     .catch((err) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });

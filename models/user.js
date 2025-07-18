@@ -30,26 +30,26 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    select: false,
+    select: false, // ⛔ ascunde parola în interogări normale
   },
 });
 
-// 🔐 Custom method for login
+// 🔐 Custom static method for login
 userSchema.statics.findUserByCredentials = function (email, password) {
-  return this.findOne({ email }).select('+password')
+  return this.findOne({ email }).select('+password') // selectează explicit parola
     .then((user) => {
       if (!user) {
-        return Promise.reject(new Error('Unauthorized'));
+        throw new Error('Unauthorized');
       }
 
-      return bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            return Promise.reject(new Error('Unauthorized'));
-          }
-          return user;
-        });
+      return bcrypt.compare(password, user.password).then((matched) => {
+        if (!matched) {
+          throw new Error('Unauthorized');
+        }
+        return user;
+      });
     });
 };
 
 module.exports = mongoose.model('User', userSchema);
+

@@ -1,5 +1,4 @@
 const express = require('express');
-
 const router = express.Router();
 
 const {
@@ -9,6 +8,10 @@ const {
   likeItem,
   unlikeItem,
 } = require('../controllers/clothingItems');
+
+const auth = require('../middlewares/auth'); // 🔐 Importă middleware-ul de autentificare
+
+router.use(auth); // 🔐 Toate rutele de mai jos sunt protejate cu JWT
 
 router.get('/', getItems);
 router.post('/', createItem);

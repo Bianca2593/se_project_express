@@ -1,12 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 // Controllers pentru autentificare
 const { createUser, login } = require('./controllers/users');
-
-// Middleware pentru autentificare
-const auth = require('./middlewares/auth');
 
 // Rute
 const usersRouter = require('./routes/users');
@@ -26,6 +25,16 @@ mongoose.connect('mongodb://127.0.0.1:27017/wtwr_db')
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
+// 🧠 Middleware securitate
+app.use(helmet());
+
+// ⏳ Limitare număr cereri/IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minute
+  max: 100, // max 100 requests per IP
+});
+app.use(limiter);
+
 // 🔧 Middleware-uri globale
 app.use(express.json());
 app.use(cors()); // activează CORS pentru frontend
@@ -34,10 +43,7 @@ app.use(cors()); // activează CORS pentru frontend
 app.post('/signup', createUser);
 app.post('/signin', login);
 
-// 🔐 Middleware pentru autentificare — de aici încolo `req.user` este disponibil
-app.use(auth);
-
-// 🔐 Rute protejate
+// 🔐 Rute protejate (auth este mutat direct în fișierele de rutare)
 app.use('/users', usersRouter);
 app.use('/items', clothingItemsRouter);
 
@@ -46,13 +52,13 @@ app.use((req, res) => {
   res.status(NOT_FOUND).json({ message: 'Requested resource not found' });
 });
 
-// 💥 Global error handler pentru erori neprevăzute (fără parametru `next`, care nu e folosit)
-app.use((err, req, res) => {
+// 💥 Handler global pentru erori neprevăzute (opțional până în Sprint 15)
+app.use((err, req, res, next) => {
   console.error('🔥 Unhandled error:', err);
   res.status(SERVER_ERROR).json({ message: 'Unhandled server error' });
 });
 
-// 🚀 Start server
+// 🚀 Pornire server
 app.listen(PORT, () => {
   console.log(`🚀 Serverul rulează pe http://localhost:${PORT}`);
 });
