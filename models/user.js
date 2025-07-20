@@ -13,8 +13,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'https://pictures.s3.yandex.net/resources/avatar_1604080799.jpg',
     validate: {
-      validator: (v) =>
-        validator.isURL(v, { protocols: ['http', 'https'], require_protocol: true }),
+      validator: (v) => validator.isURL(v, { protocols: ['http', 'https'], require_protocol: true }),
       message: 'Invalid URL',
     },
   },
@@ -30,13 +29,12 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    select: false, // ⛔ ascunde parola în interogări normale
+    select: false,
   },
 });
 
-// 🔐 Custom static method for login
 userSchema.statics.findUserByCredentials = function (email, password) {
-  return this.findOne({ email }).select('+password') // selectează explicit parola
+  return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
         throw new Error('Unauthorized');
@@ -52,4 +50,3 @@ userSchema.statics.findUserByCredentials = function (email, password) {
 };
 
 module.exports = mongoose.model('User', userSchema);
-

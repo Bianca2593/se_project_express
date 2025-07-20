@@ -11,10 +11,8 @@ const {
 module.exports.getItems = (req, res) =>
   ClothingItem.find({})
     .then((items) => res.status(200).json(items))
-    .catch((err) => {
-      console.error('Error in getItems:', err);
-      res.status(SERVER_ERROR).json({ message: 'Internal server error' });
-    });
+    .catch(() =>
+      res.status(SERVER_ERROR).json({ message: 'Internal server error' }));
 
 // POST /items
 module.exports.createItem = (req, res) => {
@@ -28,7 +26,6 @@ module.exports.createItem = (req, res) => {
   })
     .then((item) => res.status(201).json(item))
     .catch((err) => {
-      console.error('Error in createItem:', err);
       if (err.name === 'ValidationError') {
         return res.status(BAD_REQUEST).json({ message: 'Invalid item data' });
       }
@@ -54,7 +51,6 @@ module.exports.deleteItem = (req, res) => {
       return item.deleteOne().then(() => res.status(200).json(item));
     })
     .catch((err) => {
-      console.error('Error in deleteItem:', err);
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });
       }
@@ -81,7 +77,6 @@ module.exports.likeItem = (req, res) => {
     .orFail(() => new Error('NotFound'))
     .then((item) => res.status(200).json(item))
     .catch((err) => {
-      console.error('Error in likeItem:', err);
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });
       }
@@ -108,7 +103,6 @@ module.exports.unlikeItem = (req, res) => {
     .orFail(() => new Error('NotFound'))
     .then((item) => res.status(200).json(item))
     .catch((err) => {
-      console.error('Error in unlikeItem:', err);
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'Item not found' });
       }

@@ -14,8 +14,6 @@ const {
 module.exports.createUser = (req, res) => {
   const { name, avatar, email, password } = req.body;
 
-  console.log('📦 Body primit:', req.body);
-
   if (!email || !password) {
     return res.status(BAD_REQUEST).json({ message: 'Email and password are required' });
   }
@@ -33,8 +31,6 @@ module.exports.createUser = (req, res) => {
       return res.status(201).json(userWithoutPassword);
     })
     .catch((err) => {
-      console.error('❌ Eroare la createUser:', err.name, err.message);
-
       if (err.code === 11000) {
         return res.status(CONFLICT).json({ message: 'Email already exists' });
       }
@@ -65,8 +61,6 @@ module.exports.login = (req, res) => {
       return res.send({ token });
     })
     .catch((err) => {
-      console.error('❌ Eroare la login:', err.message);
-
       if (err.message === 'Unauthorized') {
         return res.status(UNAUTHORIZED).json({ message: 'Incorrect email or password' });
       }
@@ -91,7 +85,6 @@ module.exports.getCurrentUser = (req, res) => {
       if (err.message === 'NotFound') {
         return res.status(NOT_FOUND).json({ message: 'User not found' });
       }
-      console.error('❌ Eroare la getCurrentUser:', err);
       return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
     });
 };
@@ -120,7 +113,6 @@ module.exports.updateUser = (req, res) => {
       if (err.name === 'ValidationError') {
         return res.status(BAD_REQUEST).json({ message: 'Invalid user data' });
       }
-      console.error('❌ Eroare la updateUser:', err);
       return res.status(SERVER_ERROR).json({ message: 'An error has occurred on the server' });
     });
 };
