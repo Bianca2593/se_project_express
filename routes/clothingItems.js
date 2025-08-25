@@ -1,3 +1,4 @@
+// routes/clothingItems.js
 const express = require('express');
 
 const router = express.Router();
@@ -11,11 +12,20 @@ const {
 } = require('../controllers/clothingItems');
 
 const auth = require('../middlewares/auth');
+const {
+  validateItemCreate,
+  validateItemIdParam,
+} = require('../middlewares/validators');
 
+// GET poate rămâne public, cum ai acum:
 router.get('/', getItems);
-router.post('/', auth, createItem);
-router.delete('/:itemId', auth, deleteItem);
-router.put('/:itemId/likes', auth, likeItem);
-router.delete('/:itemId/likes', auth, unlikeItem);
+
+// de aici în jos, toate rutele protejate:
+router.use(auth);
+
+router.post('/', validateItemCreate, createItem);
+router.delete('/:itemId', validateItemIdParam, deleteItem);
+router.put('/:itemId/likes', validateItemIdParam, likeItem);
+router.delete('/:itemId/likes', validateItemIdParam, unlikeItem);
 
 module.exports = router;
