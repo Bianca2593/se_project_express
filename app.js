@@ -11,9 +11,9 @@ const { createUser, login } = require('./controllers/users');
 const usersRouter = require('./routes/users');
 const clothingItemsRouter = require('./routes/clothingItems');
 
-const { requestLogger, errorLogger } = require('./middlewares/logger'); // asigură-te că există
-const errorHandler = require('./middlewares/errorHandler');             // asigură-te că există
-const NotFoundError = require('./errors/NotFoundError');                // asigură-te că există
+const { requestLogger, errorLogger } = require('./middlewares/logger');
+const errorHandler = require('./middlewares/errorHandler');
+const NotFoundError = require('./errors/NotFoundError');
 
 const {
   PORT = 3001,
@@ -23,49 +23,42 @@ const {
 
 const app = express();
 
-// --- DB ---
 mongoose
   .connect(MONGODB_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// --- Security / hardening ---
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
-
-// --- Parsers & CORS ---
 app.use(express.json());
 app.use(cors());
 
-// --- Logging: requests ---
 app.use(requestLogger);
 
-// --- Public routes ---
+// >>> Sprint 15 crash-test (plasat înainte de /signin și /signup)
+app.get('/crash-test', () => {
+  setTimeout(() => {
+    throw new Error('Server will crash now');
+  }, 0);
+});
+// <<<
+
 app.post('/signup', createUser);
 app.post('/signin', login);
 
-// --- Protected routes (router-ul de users aplică `auth` în interior) ---
 app.use('/users', usersRouter);
 app.use('/items', clothingItemsRouter);
 
-// --- 404 fallthrough ---
 app.use((req, res, next) => next(new NotFoundError('Requested resource not found')));
 
-// --- Logging: errors ---
 app.use(errorLogger);
-
-// --- Celebrate/Joi errors (400) ---
 app.use(celebrateErrors());
-
-// --- Centralized error handler (ULTIMUL) ---
 app.use(errorHandler);
 
-// --- Start server (nu porni în test) ---
 if (NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`🚀 App listening at http://localhost:${PORT}`);
   });
 }
 
-// export pentru SuperTest/Jest
 module.exports = app;
