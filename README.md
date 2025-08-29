@@ -165,5 +165,8 @@ npm run dev
 ## 🧑‍💻 Author
 
 **Bianca Nechita**  
-GitHub: [@Bianca2593](https://github.com/Bianca2593)
 
+## 🌐 Deployment
+- Frontend: https://wtwrapp.chickenkiller.com
+- Backend API: https://api.wtwrapp.chickenkiller.com
+- Frontend repository (public): https://github.com/Bianca2593/se_project_react
