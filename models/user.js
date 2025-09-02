@@ -2,6 +2,14 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
+function avatarUrlValidator(v) {
+  return validator.isURL(v, { protocols: ['http', 'https'], require_protocol: true });
+}
+
+function emailValidator(v) {
+  return validator.isEmail(v);
+}
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -13,7 +21,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'https://pictures.s3.yandex.net/resources/avatar_1604080799.jpg',
     validate: {
-      validator: (v) => validator.isURL(v, { protocols: ['http', 'https'], require_protocol: true }),
+      validator: avatarUrlValidator,
       message: 'Invalid URL',
     },
   },
@@ -22,7 +30,7 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Email is required'],
     unique: true,
     validate: {
-      validator: (v) => validator.isEmail(v),
+      validator: emailValidator,
       message: 'Invalid email format',
     },
   },
@@ -33,13 +41,12 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-userSchema.statics.findUserByCredentials = function (email, password) {
+userSchema.statics.findUserByCredentials = function findUserByCredentials(email, password) {
   return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
         throw new Error('Unauthorized');
       }
-
       return bcrypt.compare(password, user.password).then((matched) => {
         if (!matched) {
           throw new Error('Unauthorized');

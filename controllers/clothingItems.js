@@ -1,114 +1,100 @@
+// controllers/clothingItems.js
 const mongoose = require('mongoose');
 const ClothingItem = require('../models/clothingItem');
-const {
-  BAD_REQUEST,
-  NOT_FOUND,
-  SERVER_ERROR,
-  FORBIDDEN,
-} = require('../utils/errors');
+
+const BadRequestError = require('../errors/BadRequestError');
+const NotFoundError = require('../errors/NotFoundError');
+const ForbiddenError = require('../errors/ForbiddenError');
 
 // GET /items
-module.exports.getItems = (req, res) =>
+module.exports.getItems = (req, res, next) => (
   ClothingItem.find({})
     .then((items) => res.status(200).json(items))
-    .catch(() =>
-      res.status(SERVER_ERROR).json({ message: 'Internal server error' }));
+    .catch(next)
+);
 
 // POST /items
-module.exports.createItem = (req, res) => {
+module.exports.createItem = (req, res, next) => {
   const { name, weather, imageUrl } = req.body;
+  const owner = req.user?._id;
 
-  return ClothingItem.create({
-    name,
-    weather,
-    imageUrl,
-    owner: req.user._id,
-  })
+  return ClothingItem.create({ name, weather, imageUrl, owner })
     .then((item) => res.status(201).json(item))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(BAD_REQUEST).json({ message: 'Invalid item data' });
+        return next(new BadRequestError('Invalid item data'));
       }
-      return res.status(SERVER_ERROR).json({ message: 'Internal server error' });
+      return next(err);
     });
 };
 
 // DELETE /items/:itemId
-module.exports.deleteItem = (req, res) => {
+module.exports.deleteItem = (req, res, next) => {
   const { itemId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(itemId)) {
-    return res.status(BAD_REQUEST).json({ message: 'Invalid item ID' });
+  if (!mongoose.isValidObjectId(itemId)) {
+    return next(new BadRequestError('Invalid item id'));
   }
 
   return ClothingItem.findById(itemId)
-    .orFail(() => new Error('NotFound'))
+    .orFail(() => new NotFoundError('Item not found'))
     .then((item) => {
-      if (item.owner.toString() !== req.user._id) {
-        return res.status(FORBIDDEN).json({ message: 'Forbidden: Not your item' });
+      if (String(item.owner) !== String(req.user?._id)) {
+        throw new ForbiddenError('You can only delete your own items');
       }
-
-      return item.deleteOne().then(() => res.status(200).json(item));
+      return item.deleteOne();
     })
+    .then(() => res.status(200).json({ message: 'Item deleted' }))
     .catch((err) => {
-      if (err.message === 'NotFound') {
-        return res.status(NOT_FOUND).json({ message: 'Item not found' });
-      }
       if (err.name === 'CastError') {
-        return res.status(BAD_REQUEST).json({ message: 'Invalid item ID format' });
+        return next(new BadRequestError('Invalid item id'));
       }
-      return res.status(SERVER_ERROR).json({ message: 'Internal server error' });
+      return next(err);
     });
 };
 
 // PUT /items/:itemId/likes
-module.exports.likeItem = (req, res) => {
+module.exports.likeItem = (req, res, next) => {
   const { itemId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(itemId)) {
-    return res.status(BAD_REQUEST).json({ message: 'Invalid item ID' });
+  if (!mongoose.isValidObjectId(itemId)) {
+    return next(new BadRequestError('Invalid item id'));
   }
 
   return ClothingItem.findByIdAndUpdate(
     itemId,
-    { $addToSet: { likes: req.user._id } },
+    { $addToSet: { likes: req.user?._id } },
     { new: true },
   )
-    .orFail(() => new Error('NotFound'))
+    .orFail(() => new NotFoundError('Item not found'))
     .then((item) => res.status(200).json(item))
     .catch((err) => {
-      if (err.message === 'NotFound') {
-        return res.status(NOT_FOUND).json({ message: 'Item not found' });
-      }
       if (err.name === 'CastError') {
-        return res.status(BAD_REQUEST).json({ message: 'Invalid item ID format' });
+        return next(new BadRequestError('Invalid item id'));
       }
-      return res.status(SERVER_ERROR).json({ message: 'Internal server error' });
+      return next(err);
     });
 };
 
 // DELETE /items/:itemId/likes
-module.exports.unlikeItem = (req, res) => {
+module.exports.dislikeItem = (req, res, next) => {
   const { itemId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(itemId)) {
-    return res.status(BAD_REQUEST).json({ message: 'Invalid item ID' });
+  if (!mongoose.isValidObjectId(itemId)) {
+    return next(new BadRequestError('Invalid item id'));
   }
 
   return ClothingItem.findByIdAndUpdate(
     itemId,
-    { $pull: { likes: req.user._id } },
+    { $pull: { likes: req.user?._id } },
     { new: true },
   )
-    .orFail(() => new Error('NotFound'))
+    .orFail(() => new NotFoundError('Item not found'))
     .then((item) => res.status(200).json(item))
     .catch((err) => {
-      if (err.message === 'NotFound') {
-        return res.status(NOT_FOUND).json({ message: 'Item not found' });
-      }
       if (err.name === 'CastError') {
-        return res.status(BAD_REQUEST).json({ message: 'Invalid item ID format' });
+        return next(new BadRequestError('Invalid item id'));
       }
-      return res.status(SERVER_ERROR).json({ message: 'Internal server error' });
+      return next(err);
     });
 };
