@@ -8,7 +8,7 @@ const {
   createItem,
   deleteItem,
   likeItem,
-  unlikeItem,
+  dislikeItem, 
 } = require('../controllers/clothingItems');
 
 const auth = require('../middlewares/auth');
@@ -17,15 +17,15 @@ const {
   validateItemIdParam,
 } = require('../middlewares/validators');
 
-// GET poate rămâne public, cum ai acum:
+// GET public
 router.get('/', getItems);
 
-// de aici în jos, toate rutele protejate:
+
 router.use(auth);
 
 router.post('/', validateItemCreate, createItem);
 router.delete('/:itemId', validateItemIdParam, deleteItem);
 router.put('/:itemId/likes', validateItemIdParam, likeItem);
-router.delete('/:itemId/likes', validateItemIdParam, unlikeItem);
+router.delete('/:itemId/likes', validateItemIdParam, dislikeItem); 
 
 module.exports = router;
